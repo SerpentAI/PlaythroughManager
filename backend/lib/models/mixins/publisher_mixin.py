@@ -1,0 +1,4 @@
+
+
+class PublisherMixin:
+    pass

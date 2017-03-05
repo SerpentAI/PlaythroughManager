@@ -1,0 +1,4 @@
+
+
+class ProductTagMixin:
+    pass

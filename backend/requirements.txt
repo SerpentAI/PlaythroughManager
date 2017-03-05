@@ -1,0 +1,3 @@
+PyYAML==3.12
+pony==0.7.1
+invoke==0.15.0

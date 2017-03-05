@@ -1,0 +1,4 @@
+
+
+class ProductCategoryMixin:
+    pass
