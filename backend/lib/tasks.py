@@ -7,10 +7,11 @@ from invoke import task
 # Task Collection Imports
 
 import lib.tasks.seeding
+import lib.tasks.product_fetching
 
 
 @task
-def version():
+def version(ctx):
     version_number = subprocess.check_output(["cat", "VERSION"]).decode("utf-8")
     revision = subprocess.check_output(["git", "log", "--pretty=format:%H", "-n", "1"]).decode("utf-8")
 
@@ -21,4 +22,5 @@ namespace = invoke.Collection()
 
 namespace.add_task(version)
 
-#namespace.add_collection(lib.tasks.seeding.namespace)
+namespace.add_collection(lib.tasks.seeding.namespace)
+namespace.add_collection(lib.tasks.product_fetching.namespace)

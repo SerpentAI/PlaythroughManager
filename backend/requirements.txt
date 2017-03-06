@@ -1,3 +1,8 @@
 PyYAML==3.12
 pony==0.7.1
 invoke==0.15.0
+requests==2.13.0
+requests-respectful==0.2.0
+beautifulsoup4==4.5.3
+selenium==3.0.2
+PyVirtualDisplay==0.2.1
