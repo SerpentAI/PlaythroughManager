@@ -11,6 +11,7 @@ from lib.models.mixins.product_genre_mixin import ProductGenreMixin
 from lib.models.mixins.product_image_mixin import ProductImageMixin
 from lib.models.mixins.product_mixin import ProductMixin
 from lib.models.mixins.product_tag_mixin import ProductTagMixin
+from lib.models.mixins.product_provider_mixin import ProductProviderMixin
 from lib.models.mixins.publisher_mixin import PublisherMixin
 from lib.models.mixins.sub_platform_mixin import SubPlatformMixin
 from lib.models.mixins.user_mixin import UserMixin

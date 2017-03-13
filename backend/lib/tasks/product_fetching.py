@@ -19,7 +19,7 @@ from pyvirtualdisplay import Display
 
 @task
 def discover_all(ctx, product_type="Games"):
-    product_ids = fetch_all_ids(product_type=product_type, sort_option="Name")
+    product_ids = selffetch_all_ids(product_type=product_type, sort_option="Name")
 
     #for product_id in product_ids:
         #discovered_product(product_type=product_type, product_id=product_id)
@@ -34,7 +34,7 @@ def discover_recent(ctx, product_type="Games", max_page=1):
     pass
 
 
-def fetch_all_ids(product_type="Games", sort_option="Name"):
+def _fetch_all_ids(product_type="Games", sort_option="Name"):
     url_generator = SteamSearchURLGenerator()
 
     display = Display(visible=0, size=(1920, 1080,))
@@ -61,7 +61,7 @@ def fetch_all_ids(product_type="Games", sort_option="Name"):
             product_ids.add(int(product_id))
 
         if max_page == 1:
-            max_page = actual_max_page
+            max_page = 10 #actual_max_page
 
         page += 1
 

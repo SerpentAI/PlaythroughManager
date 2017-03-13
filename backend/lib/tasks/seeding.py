@@ -9,6 +9,7 @@ import lib.models
 def seed(ctx):
     seed_platforms()
     seed_sub_platforms()
+    seed_product_providers()
 
 
 def seed_platforms():
@@ -61,6 +62,41 @@ def seed_sub_platform(sp):
     else:
         print(f"SubPlatform '{sub_platform.name} => {sub_platform.platform.name}' already exists. Skipping!")
 
+
+def seed_product_providers():
+    product_providers = [
+        {
+            "name": "Steam",
+            "url": "https://store.steampowered.com",
+            "platforms": ["PC"],
+            "product_fetching_class": "SteamProductFetcher"
+        }
+    ]
+
+    list(map(lambda pp: seed_product_provider(pp), product_providers))
+
+
+@db_session
+def seed_product_provider(pp):
+    product_provider = lib.models.ProductProvider.get(name=pp.get("name"))
+
+    if product_provider is None:
+        platforms = list()
+
+        for platform_name in pp.get("platforms"):
+            platform = lib.models.Platform.get(name=platform_name)
+
+            if platform is not None:
+                platforms.append(platform)
+
+        pp["platforms"] = platforms
+
+        product_provider = lib.models.ProductProvider(**pp)
+        commit()
+
+        print(f"Successfully created Product Provider '{product_provider.name}'!")
+    else:
+        print(f"Product Provider'{product_provider.name}' already exists. Skipping!")
 
 namespace = invoke.Collection("seeding")
 namespace.add_task(seed)

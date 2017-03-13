@@ -1,0 +1,4 @@
+
+
+class ProductProviderMixin:
+    pass

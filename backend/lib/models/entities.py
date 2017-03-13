@@ -16,6 +16,7 @@ class Platform(db.Entity, PlatformMixin):
     sub_platforms = Set("SubPlatform")
     products = Set("Product")
     users = Set("User")
+    product_providers = Set('ProductProvider')
 
 
 class SubPlatform(db.Entity, SubPlatformMixin):
@@ -30,7 +31,7 @@ class Product(db.Entity, ProductMixin):
     _table_ = "products"
     uuid = PrimaryKey(UUID, default=uuid4)
     type = Required(unicode)
-    name = Required(unicode)
+    name = Optional(unicode)
     external_id = Optional(unicode)
     description = Optional(LongUnicode)
     release_date = Optional(datetime)
@@ -55,6 +56,7 @@ class Product(db.Entity, ProductMixin):
     product_images = Set("ProductImage")
     playthroughs = Set("Playthrough")
     users = Set("User")
+    product_providers = Set('ProductProvider')
 
 
 class Developer(db.Entity, DeveloperMixin):
@@ -116,6 +118,16 @@ class ProductImage(db.Entity, ProductImageMixin):
     type = Required(unicode)
     url = Required(LongUnicode)
     product = Required("Product")
+
+
+class ProductProvider(db.Entity, ProductProviderMixin):
+    _table_ = 'product_providers'
+    uuid = PrimaryKey(UUID, default=uuid4)
+    name = Required(unicode)
+    url = Optional(LongUnicode)
+    product_fetching_class = Required(unicode)
+    platforms = Set("Platform")
+    products = Set("Product")
 
 
 class Playthrough(db.Entity, PlaythroughMixin):

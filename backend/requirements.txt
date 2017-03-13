@@ -4,5 +4,8 @@ invoke==0.15.0
 requests==2.13.0
 requests-respectful==0.2.0
 beautifulsoup4==4.5.3
-selenium==3.0.2
+selenium==3.3.0
 PyVirtualDisplay==0.2.1
+redis==2.10.5
+rq==0.7.1
+dateutils==0.6.6
