@@ -2,18 +2,20 @@ from lib.product_fetcher import ProductFetcher, ProductFetcherError
 
 from lib.helpers.steam.steam_search_url_generator import SteamSearchURLGenerator
 
-from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.phantomjs.webdriver import WebDriver
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
-from pyvirtualdisplay import Display
+from selenium_respectful import RespectfulWebdriver
 
 from pony.orm import *
 
 import lib.models
 import uuid
+import re
 
 from datetime import datetime
 
@@ -23,7 +25,6 @@ from requests_respectful import RespectfulRequester
 from dateutil.parser import parse as datetime_parse
 
 from lib.config import config
-
 
 
 class SteamProductFetcher(ProductFetcher):
@@ -88,10 +89,10 @@ class SteamProductFetcher(ProductFetcher):
         self.enqueue_product_update_jobs(kwargs["product"])
 
     def enqueue_product_update_jobs(self, product):
-        steam_big_picture_api_job = self.queue.enqueue(self.__class__.update_product_from_big_picture_api, str(product.uuid))
-        steam_web_api_job = self.queue.enqueue(self.__class__.update_product_from_web_api, str(product.uuid))
-        # Scraping
+        self.queue.enqueue(self.__class__.update_product_from_big_picture_api, str(product.uuid))
+        self.queue.enqueue(self.__class__.update_product_from_store_page, str(product.uuid))
 
+        steam_web_api_job = self.queue.enqueue(self.__class__.update_product_from_web_api, str(product.uuid))
         self.queue.enqueue(self.__class__.update_achievement_global_percents_from_web_api, str(product.uuid), depends_on=steam_web_api_job)
 
     @classmethod
@@ -143,6 +144,123 @@ class SteamProductFetcher(ProductFetcher):
 
         cls.update_product_basic_information(product, data)
         cls.update_product_sub_platforms(product, data)
+        cls.update_product_developers(product, data)
+        cls.update_product_publishers(product, data)
+        cls.update_product_genres(product, data)
+        cls.update_product_categories(product, data)
+        cls.update_product_parent_children(product, data)
+
+    @classmethod
+    @db_session
+    def update_product_from_store_page(cls, product_uuid):
+        product = lib.models.Product.get(uuid=uuid.UUID(product_uuid))
+
+        if product is None:
+            raise ProductFetcherError("Invalid product provided!")
+
+        driver = RespectfulWebdriver(webdriver=WebDriver())
+        driver.register_realm("Steam Store", max_requests=100, timespan=60)
+
+        url = f"{config['product_providers']['steam']['store']['base_url']}/app/{product.external_id}"
+
+        driver.get(url, realms=["Steam Store"], wait=True)
+
+        # TODO: Handle Age Verification...
+
+        try:
+            description_element = driver.find_element_by_class_name("game_description_snippet")
+            description = description_element.text
+        except NoSuchElementException:
+            description = ""
+
+        try:
+            tag_plus_button_element = driver.find_element_by_css_selector(".popular_tags .add_button")
+            tag_plus_button_element.click()
+
+            tag_elements = driver.find_elements_by_css_selector("div.app_tag_control > a")
+
+            tags = list()
+
+            for tag_element in tag_elements:
+                tags.append(tag_element.text)
+
+            close_element = driver.find_element_by_class_name("newmodal_close")
+            close_element.click()
+        except NoSuchElementException:
+            tags = list()
+
+        try:
+            screenshot_elements = driver.find_elements_by_css_selector("div.highlight_strip_screenshot img")
+            screenshot_urls = list()
+
+            for screenshot_element in screenshot_elements:
+                url = screenshot_element.get_attribute("src")
+                screenshot_urls.append(url.replace("116x65", "600x338"))
+        except NoSuchElementException:
+            screenshot_urls = list()
+
+        try:
+            review_label_element = driver.find_element_by_css_selector(".user_reviews_filter_options .user_reviews_filter_score .game_review_summary")
+            review_label = review_label_element.text
+        except NoSuchElementException:
+            review_label = None
+
+        try:
+            review_total_element = driver.find_element_by_css_selector("label[for=review_type_all] span.user_reviews_count")
+            review_total = int(re.sub(r"[\(\),]", "", review_total_element.text))
+        except NoSuchElementException:
+            review_total = None
+
+        try:
+            review_positive_element = driver.find_element_by_css_selector("label[for=review_type_positive] span.user_reviews_count")
+            review_positive = int(re.sub(r"[\(\),]", "", review_positive_element.text))
+        except NoSuchElementException:
+            review_positive = None
+
+        try:
+            review_negative_element = driver.find_element_by_css_selector("label[for=review_type_negative] span.user_reviews_count")
+            review_negative = int(re.sub(r"[\(\),]", "", review_negative_element.text))
+        except NoSuchElementException:
+            review_negative = None
+
+        product.set(
+            description=description,
+            review_label=review_label,
+            review_total=review_total,
+            review_positive=review_positive,
+            review_negative=review_negative
+        )
+
+        for tag in tags:
+            t = lib.models.ProductTag.get(label=tag)
+
+            if t is None:
+                t = lib.models.ProductTag(label=tag)
+
+            if t not in product.product_tags:
+                product.product_tags.add(t)
+
+        for tag in product.product_tags:
+            if tag.label not in tags:
+                product.product_tags.remove(tag)
+
+        for screenshot_url in screenshot_urls:
+            product_image = lib.models.ProductImage.get(type="screenshot", url=screenshot_url, product=product)
+
+            if product_image is None:
+                product_image = lib.models.ProductImage(
+                    type="screenshot",
+                    url=screenshot_url,
+                    product=product
+                )
+
+            if product_image not in product.product_images:
+                product.product_images.add(product_image)
+
+        for pi in product.product_images:
+            if pi.url not in screenshot_urls:
+                product.product_images.remove(product_image)
+
 
     @classmethod
     @db_session
@@ -176,6 +294,116 @@ class SteamProductFetcher(ProductFetcher):
                         product.sub_platforms.remove(sub_platform)
 
         commit()
+
+    @classmethod
+    @db_session
+    def update_product_developers(cls, product, data):
+        if "developers" in data:
+            developers = list()
+
+            for developer_name in data["developers"]:
+                developer = lib.models.Developer.get(name=developer_name)
+
+                if developer is None:
+                    developer = lib.models.Developer(name=developer_name)
+
+                developers.append(developer)
+
+                if developer not in product.developers:
+                    product.developers.add(developer)
+
+            for developer in product.developers:
+                if developer not in developers:
+                    product.developers.remove(developer)
+
+            commit()
+
+    @classmethod
+    @db_session
+    def update_product_publishers(cls, product, data):
+        if "publishers" in data:
+            publishers = list()
+
+            for publisher_name in data["publishers"]:
+                publisher = lib.models.Publisher.get(name=publisher_name)
+
+                if publisher is None:
+                    publisher = lib.models.Publisher(name=publisher_name)
+
+                publishers.append(publisher)
+
+                if publisher not in product.publishers:
+                    product.publishers.add(publisher)
+
+            for publisher in product.publishers:
+                if publisher not in publishers:
+                    product.publishers.remove(publisher)
+
+            commit()
+
+    @classmethod
+    @db_session
+    def update_product_genres(cls, product, data):
+        if "genres" in data:
+            genres = list()
+
+            for genre in data["genres"]:
+                g = lib.models.ProductGenre.get(name=genre.get("description"), external_id=str(genre.get("id")))
+
+                if g is None:
+                    g = lib.models.ProductGenre(
+                        name=genre.get("description"),
+                        external_id=str(genre.get("id"))
+                    )
+
+                genres.append(g)
+
+                if g not in product.product_genres:
+                    product.product_genres.add(g)
+
+            for genre in product.product_genres:
+                if genre not in genres:
+                    product.product_genres.remove(g)
+
+            commit()
+
+    @classmethod
+    @db_session
+    def update_product_categories(cls, product, data):
+        if "categories" in data:
+            categories = list()
+
+            for category in data["categories"]:
+                c = lib.models.ProductCategory.get(name=category.get("description"), external_id=str(category.get("id")))
+
+                if c is None:
+                    c = lib.models.ProductCategory(
+                        name=category.get("description"),
+                        external_id=str(category.get("id"))
+                   )
+
+                categories.append(c)
+
+                if c not in product.product_categories:
+                    product.product_categories.add(c)
+
+            for category in product.product_categories:
+                if category not in categories:
+                    product.product_categories.remove(c)
+
+            commit()
+
+    @classmethod
+    @db_session
+    def update_product_parent_children(cls, product, data):
+        product_provider = lib.models.ProductProvider.get(name="Steam")
+
+        if "fullgame" in data and data.get("type") == "dlc":
+            if data["fullgame"]["appid"] is not None:
+                parent_product = lib.models.Product.get(lambda p: p.external_id == data["fullgame"]["appid"] and product_provider in p.product_providers)
+
+                if parent_product is not None:
+                    product.parent = parent_product
 
     @classmethod
     @db_session
@@ -276,10 +504,7 @@ class SteamProductFetcher(ProductFetcher):
     def _fetch_product_ids(self, product_type="Games", sort_option="Name", max_page=100000):
         url_generator = SteamSearchURLGenerator()
 
-        display = Display(visible=0, size=(1920, 1080,))
-        display.start()
-
-        webdriver = WebDriver("vendor/chromedriver")
+        webdriver = WebDriver()
         webdriver.set_window_size(1920, 1080)
 
         page = 1

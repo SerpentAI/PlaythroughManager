@@ -49,14 +49,15 @@ class Product(db.Entity, ProductMixin):
     product_genres = Set("ProductGenre")
     product_categories = Set("ProductCategory")
     product_achievements = Set("ProductAchievement")
+    product_images = Set("ProductImage")
+    product_providers = Set('ProductProvider')
     created_at = Required(datetime, default=datetime.utcnow)
     updated_at = Required(datetime, default=datetime.utcnow)
     children = Set("Product", reverse="parent")
     parent = Optional("Product", reverse="children")
-    product_images = Set("ProductImage")
     playthroughs = Set("Playthrough")
     users = Set("User")
-    product_providers = Set('ProductProvider')
+
 
 
 class Developer(db.Entity, DeveloperMixin):

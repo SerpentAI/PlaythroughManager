@@ -5,6 +5,7 @@ requests==2.13.0
 requests-respectful==0.2.0
 beautifulsoup4==4.5.3
 selenium==3.3.0
+selenium-respectful==0.1.0
 PyVirtualDisplay==0.2.1
 redis==2.10.5
 rq==0.7.1

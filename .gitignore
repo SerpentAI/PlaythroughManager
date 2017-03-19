@@ -16,3 +16,8 @@ __pycache__/
 npm-debug.log
 
 *.sqlite
+
+backend/.ipynb_checkpoints/
+*.ipynb
+
+ghostdriver.log
