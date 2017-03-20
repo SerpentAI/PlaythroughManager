@@ -3,7 +3,7 @@ from lib.config import config
 
 class SteamSearchURLGenerator:
     PRODUCT_TYPES = {
-        "Games":998,
+        "Games": 998,
         "DLC": 21
     }
 

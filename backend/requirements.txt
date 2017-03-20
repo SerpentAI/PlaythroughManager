@@ -10,3 +10,4 @@ PyVirtualDisplay==0.2.1
 redis==2.10.5
 rq==0.7.1
 dateutils==0.6.6
+autobahn==0.17.2

@@ -2,20 +2,23 @@ from lib.product_fetcher import ProductFetcher, ProductFetcherError
 
 from lib.helpers.steam.steam_search_url_generator import SteamSearchURLGenerator
 
-from selenium.webdriver.phantomjs.webdriver import WebDriver
+from selenium.webdriver.chrome.webdriver import WebDriver
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, ElementNotVisibleException
 
 from selenium_respectful import RespectfulWebdriver
+
+from pyvirtualdisplay import Display
 
 from pony.orm import *
 
 import lib.models
 import uuid
 import re
+
 
 from datetime import datetime
 
@@ -158,79 +161,101 @@ class SteamProductFetcher(ProductFetcher):
         if product is None:
             raise ProductFetcherError("Invalid product provided!")
 
+        display = Display(visible=False, size=(800, 600))
+        display.start()
+
         driver = RespectfulWebdriver(webdriver=WebDriver())
-        driver.register_realm("Steam Store", max_requests=100, timespan=60)
-
-        url = f"{config['product_providers']['steam']['store']['base_url']}/app/{product.external_id}"
-
-        driver.get(url, realms=["Steam Store"], wait=True)
-
-        # TODO: Handle Age Verification...
 
         try:
-            description_element = driver.find_element_by_class_name("game_description_snippet")
-            description = description_element.text
-        except NoSuchElementException:
-            description = ""
+            driver.register_realm("Steam Store", max_requests=100, timespan=60)
 
-        try:
-            tag_plus_button_element = driver.find_element_by_css_selector(".popular_tags .add_button")
-            tag_plus_button_element.click()
+            driver.get(f"{config['product_providers']['steam']['store']['base_url']}", realms=["Steam Store"], wait=True)
 
-            tag_elements = driver.find_elements_by_css_selector("div.app_tag_control > a")
+            driver.add_cookie({"name": "birthtime", "value": "0", "domain": "store.steampowered.com"})
+            driver.add_cookie({"name": "lastagecheckage", "value": "1-January-1900", "domain": "store.steampowered.com"})
 
-            tags = list()
+            url = f"{config['product_providers']['steam']['store']['base_url']}/app/{product.external_id}"
 
-            for tag_element in tag_elements:
-                tags.append(tag_element.text)
+            driver.get(url, realms=["Steam Store"], wait=True)
 
-            close_element = driver.find_element_by_class_name("newmodal_close")
-            close_element.click()
-        except NoSuchElementException:
-            tags = list()
+            try:
+                description_element = driver.find_element_by_class_name("game_description_snippet")
+                description = description_element.text
+            except NoSuchElementException:
+                description = ""
 
-        try:
-            screenshot_elements = driver.find_elements_by_css_selector("div.highlight_strip_screenshot img")
-            screenshot_urls = list()
+            try:
+                tag_plus_button_element = driver.find_element_by_css_selector(".popular_tags .add_button")
+                tag_plus_button_element.click()
 
-            for screenshot_element in screenshot_elements:
-                url = screenshot_element.get_attribute("src")
-                screenshot_urls.append(url.replace("116x65", "600x338"))
-        except NoSuchElementException:
-            screenshot_urls = list()
+                tag_elements = driver.find_elements_by_css_selector("div.app_tag_control > a")
 
-        try:
-            review_label_element = driver.find_element_by_css_selector(".user_reviews_filter_options .user_reviews_filter_score .game_review_summary")
-            review_label = review_label_element.text
-        except NoSuchElementException:
-            review_label = None
+                tags = list()
 
-        try:
-            review_total_element = driver.find_element_by_css_selector("label[for=review_type_all] span.user_reviews_count")
-            review_total = int(re.sub(r"[\(\),]", "", review_total_element.text))
-        except NoSuchElementException:
-            review_total = None
+                for tag_element in tag_elements:
+                    tags.append(tag_element.text)
 
-        try:
-            review_positive_element = driver.find_element_by_css_selector("label[for=review_type_positive] span.user_reviews_count")
-            review_positive = int(re.sub(r"[\(\),]", "", review_positive_element.text))
-        except NoSuchElementException:
-            review_positive = None
+                close_element = driver.find_element_by_class_name("newmodal_close")
+                close_element.click()
+            except NoSuchElementException:
+                tags = list()
+            except ElementNotVisibleException:
+                tags = list()
 
-        try:
-            review_negative_element = driver.find_element_by_css_selector("label[for=review_type_negative] span.user_reviews_count")
-            review_negative = int(re.sub(r"[\(\),]", "", review_negative_element.text))
-        except NoSuchElementException:
-            review_negative = None
+            try:
+                screenshot_elements = driver.find_elements_by_css_selector("div.highlight_strip_screenshot img")
+                screenshot_urls = list()
 
-        product.set(
-            description=description,
-            review_label=review_label,
-            review_total=review_total,
-            review_positive=review_positive,
-            review_negative=review_negative
-        )
+                for screenshot_element in screenshot_elements:
+                    url = screenshot_element.get_attribute("src")
+                    screenshot_urls.append(url.replace("116x65", "600x338"))
+            except NoSuchElementException:
+                screenshot_urls = list()
 
+            try:
+                review_label_element = driver.find_element_by_css_selector(".user_reviews_filter_options .user_reviews_filter_score .game_review_summary")
+                review_label = review_label_element.text
+            except NoSuchElementException:
+                review_label = None
+
+            try:
+                review_total_element = driver.find_element_by_css_selector("label[for=review_type_all] span.user_reviews_count")
+                review_total = int(re.sub(r"[\(\),]", "", review_total_element.text))
+            except NoSuchElementException:
+                review_total = None
+
+            try:
+                review_positive_element = driver.find_element_by_css_selector("label[for=review_type_positive] span.user_reviews_count")
+                review_positive = int(re.sub(r"[\(\),]", "", review_positive_element.text))
+            except NoSuchElementException:
+                review_positive = None
+
+            try:
+                review_negative_element = driver.find_element_by_css_selector("label[for=review_type_negative] span.user_reviews_count")
+                review_negative = int(re.sub(r"[\(\),]", "", review_negative_element.text))
+            except NoSuchElementException:
+                review_negative = None
+
+            product.set(
+                description=description,
+                review_label=review_label,
+                review_total=review_total,
+                review_positive=review_positive,
+                review_negative=review_negative
+            )
+
+            cls.update_product_tags(product, tags)
+            cls.update_product_screenshots(product, screenshot_urls)
+            cls.update_product_icons(product)
+        except Exception:
+            pass
+        finally:
+            driver.quit()
+            display.stop()
+
+    @classmethod
+    @db_session
+    def update_product_tags(cls, product, tags):
         for tag in tags:
             t = lib.models.ProductTag.get(label=tag)
 
@@ -244,6 +269,9 @@ class SteamProductFetcher(ProductFetcher):
             if tag.label not in tags:
                 product.product_tags.remove(tag)
 
+    @classmethod
+    @db_session
+    def update_product_screenshots(cls, product, screenshot_urls):
         for screenshot_url in screenshot_urls:
             product_image = lib.models.ProductImage.get(type="screenshot", url=screenshot_url, product=product)
 
@@ -261,6 +289,26 @@ class SteamProductFetcher(ProductFetcher):
             if pi.url not in screenshot_urls:
                 product.product_images.remove(product_image)
 
+    @classmethod
+    @db_session
+    def update_product_icons(cls, product):
+        small_product_icon = lib.models.ProductImage.get(type="icon_small", product=product)
+
+        if small_product_icon is None:
+            lib.models.ProductImage(
+                type="icon_small",
+                url=f"http://cdn.akamai.steamstatic.com/steam/apps/{product.external_id}/capsule_sm_120.jpg",
+                product=product
+            )
+
+        large_product_icon = lib.models.ProductImage.get(type="icon_large", product=product)
+
+        if large_product_icon is None:
+            lib.models.ProductImage(
+                type="icon_large",
+                url=f"http://cdn.akamai.steamstatic.com/steam/apps/{product.external_id}/header.jpg",
+                product=product
+            )
 
     @classmethod
     @db_session

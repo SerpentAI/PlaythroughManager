@@ -1,0 +1,11 @@
+{
+  "crossbar": {
+    "host": "localhost",
+    "port": 9999,
+    "realm": "playthrough_manager",
+    "auth": {
+      "username": "client",
+      "password": "12345"
+    }
+  }
+}

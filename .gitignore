@@ -1,14 +1,14 @@
 .idea
 backend/.idea
-interface/.idea
+frontend/.idea
 
 backend/config/config.yml
 backend/config/config.dev.yml
 
-interface/config/config.json
-interface/config/config.dev.json
+frontend/config/config.json
+frontend/config/config.dev.json
 
-interfaces/node_modules
+frontend/node_modules
 
 __pycache__/
 *.py[cod]

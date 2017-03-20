@@ -35,7 +35,19 @@ class ProductMixin:
         json_representation["product_genres"] = [{"uuid": str(pg.uuid), "name": pg.name, "external_id": pg.external_id} for pg in self.product_genres]
         json_representation["product_categories"] = [{"uuid": str(pc.uuid), "name": pc.name, "external_id": pc.external_id} for pc in self.product_categories]
         json_representation["product_achievements"] = [{"uuid": str(pa.uuid), "name": pa.name, "description": pa.description, "external_id": pa.external_id} for pa in self.product_achievements]
-        json_representation["product_images"] = [{"uuid": str(pi.uuid), "type": pi.type, "url": pi.url} for pi in self.product_images]
+
+        product_images = dict()
+
+        for product_image in self.product_images:
+            if product_image.type not in product_images:
+                product_images[product_image.type] = list()
+
+            product_images[product_image.type].append({
+                "uuid": str(product_image.uuid),
+                "url": product_image.url
+            })
+
+        json_representation["product_images"] = product_images
         json_representation["product_providers"] = [{"uuid": str(pp.uuid), "name": pp.name, "url": pp.url} for pp in self.product_providers]
 
         json_representation["children"] = [c.as_minimal_json() for c in self.children]
