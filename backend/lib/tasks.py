@@ -6,8 +6,8 @@ from invoke import task
 
 # Task Collection Imports
 
-import lib.tasks.seeding
-import lib.tasks.product_fetching
+import lib.invoke_tasks.seeding
+import lib.invoke_tasks.product_fetching
 
 
 @task
@@ -22,5 +22,5 @@ namespace = invoke.Collection()
 
 namespace.add_task(version)
 
-namespace.add_collection(lib.tasks.seeding.namespace)
-namespace.add_collection(lib.tasks.product_fetching.namespace)
+namespace.add_collection(lib.invoke_tasks.seeding.namespace)
+namespace.add_collection(lib.invoke_tasks.product_fetching.namespace)

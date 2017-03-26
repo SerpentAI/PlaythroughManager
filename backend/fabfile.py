@@ -3,9 +3,9 @@ from fabric.api import *
 env.user = "ubuntu"
 env.key_filename = "/home/serpent/.ssh/serpent.pem"
 
-rq_broker_hosts = ["ec2-52-60-160-109.ca-central-1.compute.amazonaws.com"]
+rq_broker_hosts = ["ec2-52-60-160-247.ca-central-1.compute.amazonaws.com"]
 rq_worker_hosts = [
-    "ec2-52-60-134-43.ca-central-1.compute.amazonaws.com"
+    "ec2-52-60-145-205.ca-central-1.compute.amazonaws.com"
 ]
 
 
@@ -26,6 +26,9 @@ def setup_rq_broker():
     sudo("add-apt-repository ppa:chris-lea/redis-server -y")
     sudo("apt-get update")
     sudo("apt-get install redis-server -y")
+
+    put("config/redis/redis.conf", "/etc/redis/redis.conf", use_sudo=True, mode=600)
+    sudo("systemctl restart redis-server")
 
     run("curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash")
     run("echo 'export PATH=\"/home/ubuntu/.pyenv/bin:$PATH\"' >> .profile")
@@ -76,20 +79,35 @@ def setup_rq_worker():
     run("pyenv install 2.7.13")
     run("pyenv install 3.6.1")
 
-    run("git clone git@github.com:SerpentAI/PlaythroughManager.git")
-
     run("pyenv virtualenv 3.6.1 playthrough_manager")
 
-    sudo("apt-get install xvfb -y")
+    run("git clone https://github.com/SerpentAI/PlaythroughManager.git")
 
-    with cd("PlaythroughManager"):
+    sudo("apt-get install xvfb -y")
+    sudo("apt-get install chromium-browser -y")
+
+    with cd("PlaythroughManager/backend"):
         run("pyenv local playthrough_manager")
         run("pip install -r requirements.txt")
 
         with cd("config"):
-            run("ln -ls config.prod.yml config.yml")
+            run("ln -s config.prod.yml config.yml")
 
-    # Install supervisor
-    # Setup RQ Workers in supervisor
+    run("pyenv virtualenv 2.7.13 supervisor")
+    run("pyenv local supervisor")
+    run("pip install supervisor")
+
+    sudo("echo_supervisord_conf > /etc/supervisord.conf")
+    sudo("chown ubuntu:ubuntu /etc/supervisord.conf")
+
+    run("curl https://gist.githubusercontent.com/nbrochu/017cea2ccbf20a4935cf7176b7a293bc/raw/a9df55372c009f500005212030af8756cde4857d/supervisor-program.conf >> /etc/supervisord.conf")
+
+    sudo("mkdir /var/log/PlaythroughManager")
+    sudo("chown -R ubuntu:ubuntu /var/log/PlaythroughManager")
+
+    run("supervisord")
 
 
+@hosts(rq_broker_hosts)
+def test():
+    sudo("systemctl restart redis-server")

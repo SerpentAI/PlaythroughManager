@@ -1,7 +1,7 @@
 environment: production
 
 redis:
-    host: 52.60.130.238
+    host: 52.60.160.247
     port: 6379
     databases:
         jobs: 0

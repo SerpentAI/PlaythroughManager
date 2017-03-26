@@ -133,7 +133,7 @@ class SteamProductFetcher(ProductFetcher):
         requester.register_realm("Steam Big Picture API", max_requests=40, timespan=60)
 
         url = f"{config['product_providers']['steam']['big_picture_api']['base_url']}/appdetails?appids={product.external_id}"
-        http_response = requester.get(url, realms=["Steam Web API"], wait=True)
+        http_response = requester.get(url, realms=["Steam Big Picture API"], wait=True)
 
         if http_response.status_code != 200:
             raise ProductFetcherError("Invalid response from the Steam Big Picture API...")
@@ -216,25 +216,25 @@ class SteamProductFetcher(ProductFetcher):
                 review_label_element = driver.find_element_by_css_selector(".user_reviews_filter_options .user_reviews_filter_score .game_review_summary")
                 review_label = review_label_element.text
             except NoSuchElementException:
-                review_label = None
+                review_label = ""
 
             try:
                 review_total_element = driver.find_element_by_css_selector("label[for=review_type_all] span.user_reviews_count")
                 review_total = int(re.sub(r"[\(\),]", "", review_total_element.text))
             except NoSuchElementException:
-                review_total = None
+                review_total = 0
 
             try:
                 review_positive_element = driver.find_element_by_css_selector("label[for=review_type_positive] span.user_reviews_count")
                 review_positive = int(re.sub(r"[\(\),]", "", review_positive_element.text))
             except NoSuchElementException:
-                review_positive = None
+                review_positive = 0
 
             try:
                 review_negative_element = driver.find_element_by_css_selector("label[for=review_type_negative] span.user_reviews_count")
                 review_negative = int(re.sub(r"[\(\),]", "", review_negative_element.text))
             except NoSuchElementException:
-                review_negative = None
+                review_negative = 0
 
             product.set(
                 description=description,
