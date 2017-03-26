@@ -1,0 +1,40 @@
+environment: production
+
+redis:
+    host: 52.60.130.238
+    port: 6379
+    databases:
+        jobs: 0
+
+redis_local:
+    host: localhost
+    port: 6379
+    databases:
+        requests: 0
+
+database:
+    host: serpentpm.cskxlitkfqgu.ca-central-1.rds.amazonaws.com
+    port: 5432
+    name: playthrough_manager
+    user: serpentpm
+    password: serpentpm
+
+crossbar:
+    host: localhost
+    port: 9999
+    realm: playthrough_manager
+    auth:
+        username: backend
+        password: "12345"
+
+product_providers:
+    steam:
+        store:
+            base_url: http://store.steampowered.com
+        web_api:
+            base_url: http://api.steampowered.com
+            api_key: 9BCF61729B0EAEDE34E88315C9791D63
+        big_picture_api:
+            base_url: http://store.steampowered.com/api
+
+

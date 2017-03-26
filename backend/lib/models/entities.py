@@ -178,5 +178,12 @@ class User(db.Entity, UserMixin):
     playthroughs = Set("Playthrough")
 
 
-db.bind("sqlite", f"../../database.{config['environment']}.sqlite", create_db=True)
+db.bind(
+    "postgres",
+    user=config["database"]["user"],
+    password=config["database"]["password"],
+    host=config["database"]["host"],
+    database=config["database"]["name"]
+)
+
 db.generate_mapping(create_tables=True)

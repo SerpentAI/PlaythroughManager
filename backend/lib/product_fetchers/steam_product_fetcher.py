@@ -164,7 +164,7 @@ class SteamProductFetcher(ProductFetcher):
         display = Display(visible=False, size=(800, 600))
         display.start()
 
-        driver = RespectfulWebdriver(webdriver=WebDriver())
+        driver = RespectfulWebdriver(webdriver=WebDriver("vendor/chromedriver"))
 
         try:
             driver.register_realm("Steam Store", max_requests=100, timespan=60)
@@ -552,7 +552,7 @@ class SteamProductFetcher(ProductFetcher):
     def _fetch_product_ids(self, product_type="Games", sort_option="Name", max_page=100000):
         url_generator = SteamSearchURLGenerator()
 
-        webdriver = WebDriver()
+        webdriver = WebDriver("vendor/chromedriver")
         webdriver.set_window_size(1920, 1080)
 
         page = 1
