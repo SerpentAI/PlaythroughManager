@@ -200,6 +200,7 @@ class SteamProductFetcher(ProductFetcher):
             except NoSuchElementException:
                 tags = list()
             except ElementNotVisibleException:
+                # TODO Still fetch the tags that are not in the modal
                 tags = list()
 
             try:
@@ -552,6 +553,9 @@ class SteamProductFetcher(ProductFetcher):
     def _fetch_product_ids(self, product_type="Games", sort_option="Name", max_page=100000):
         url_generator = SteamSearchURLGenerator()
 
+        display = Display(size=(1920, 1080), visible=0)
+        display.start()
+
         webdriver = WebDriver("vendor/chromedriver")
         webdriver.set_window_size(1920, 1080)
 
@@ -577,6 +581,7 @@ class SteamProductFetcher(ProductFetcher):
             page += 1
 
         webdriver.quit()
+        display.stop()
 
         return product_ids
 

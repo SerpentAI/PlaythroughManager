@@ -3,13 +3,7 @@ from fabric.api import *
 env.user = "ubuntu"
 env.key_filename = "/home/serpent/.ssh/serpent.pem"
 
-rq_broker_hosts = ["ec2-52-60-160-247.ca-central-1.compute.amazonaws.com"]
-rq_worker_hosts = [
-    "ec2-52-60-145-205.ca-central-1.compute.amazonaws.com"
-]
 
-
-@hosts(rq_broker_hosts)
 def setup_rq_broker():
     sudo("apt-get update")
     sudo("apt-get upgrade -y")
@@ -26,9 +20,8 @@ def setup_rq_broker():
     sudo("add-apt-repository ppa:chris-lea/redis-server -y")
     sudo("apt-get update")
     sudo("apt-get install redis-server -y")
-
-    put("config/redis/redis.conf", "/etc/redis/redis.conf", use_sudo=True, mode=600)
-    sudo("systemctl restart redis-server")
+    sudo("sudo sed -i 's/bind 127.0.0.1/bind 0.0.0.0/' /etc/redis/redis.conf")
+    sudo("systemctl restart redis")
 
     run("curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash")
     run("echo 'export PATH=\"/home/ubuntu/.pyenv/bin:$PATH\"' >> .profile")
@@ -51,7 +44,7 @@ def setup_rq_broker():
     sudo("systemctl enable rq-dashboard")
 
 
-@hosts(rq_worker_hosts)
+@parallel(pool_size=10)
 def setup_rq_worker():
     sudo("apt-get update")
     sudo("apt-get upgrade -y")
@@ -106,8 +99,3 @@ def setup_rq_worker():
     sudo("chown -R ubuntu:ubuntu /var/log/PlaythroughManager")
 
     run("supervisord")
-
-
-@hosts(rq_broker_hosts)
-def test():
-    sudo("systemctl restart redis-server")

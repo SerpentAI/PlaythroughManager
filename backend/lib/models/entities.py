@@ -178,12 +178,17 @@ class User(db.Entity, UserMixin):
     playthroughs = Set("Playthrough")
 
 
-db.bind(
-    "postgres",
-    user=config["database"]["user"],
-    password=config["database"]["password"],
-    host=config["database"]["host"],
-    database=config["database"]["name"]
-)
+try:
+    db.bind(
+        "postgres",
+        user=config["database"]["user"],
+        password=config["database"]["password"],
+        host=config["database"]["host"],
+        database=config["database"]["name"]
+    )
 
-db.generate_mapping(create_tables=True)
+    db.generate_mapping(create_tables=True)
+except Exception as e:
+    print(e)
+
+
