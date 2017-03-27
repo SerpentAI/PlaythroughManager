@@ -25,8 +25,8 @@ def start_product_fetching(ctx):
     create_rq_workers(aws_session, quantity=10)
 
     # Steam Products
-    #spf = SteamProductFetcher()
-    #spf.discover_all(product_type="Games")
+    spf = SteamProductFetcher()
+    spf.discover_all(product_type="Games")
 
 
 def create_database(aws_session):
