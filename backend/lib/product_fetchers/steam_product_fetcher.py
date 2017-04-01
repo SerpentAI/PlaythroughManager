@@ -351,6 +351,9 @@ class SteamProductFetcher(ProductFetcher):
             developers = list()
 
             for developer_name in data["developers"]:
+                if developer_name == "":
+                    continue
+
                 developer = lib.models.Developer.get(name=developer_name)
 
                 if developer is None:
@@ -374,6 +377,9 @@ class SteamProductFetcher(ProductFetcher):
             publishers = list()
 
             for publisher_name in data["publishers"]:
+                if publisher_name == "":
+                    continue
+
                 publisher = lib.models.Publisher.get(name=publisher_name)
 
                 if publisher is None:

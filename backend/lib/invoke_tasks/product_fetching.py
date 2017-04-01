@@ -17,16 +17,26 @@ import shlex
 
 
 @task
-def start_product_fetching(ctx):
+def setup_rq_cluster(ctx):
     aws_session = boto3.Session(profile_name="serpent")
 
-    #create_database(aws_session)
-    #create_rq_broker(aws_session)
+    create_database(aws_session)
+    create_rq_broker(aws_session)
     create_rq_workers(aws_session, quantity=10)
 
+
+@task
+def discover_games(ctx):
     # Steam Products
     spf = SteamProductFetcher()
     spf.discover_all(product_type="Games")
+
+
+@task
+def discover_dlc(ctx):
+    # Steam Products
+    spf = SteamProductFetcher()
+    spf.discover_all(product_type="DLC")
 
 
 def create_database(aws_session):
@@ -231,4 +241,6 @@ def create_rq_workers(aws_session, quantity=1):
 
 namespace = invoke.Collection("product_fetching")
 
-namespace.add_task(start_product_fetching)
+namespace.add_task(setup_rq_cluster)
+namespace.add_task(discover_games)
+namespace.add_task(discover_dlc)
