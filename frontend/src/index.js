@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import { BrowserRouter, Route, IndexRoute } from 'react-router-dom'
+import { BrowserRouter as Router, Route, IndexRoute } from 'react-router-dom'
 
 import { wampClient } from './helpers/wamp_client';
 
@@ -11,12 +11,10 @@ import './index.css';
 
 
 ReactDOM.render(
-    <BrowserRouter>
+    <Router>
         <div>
-            <Route path="/" component={App}>
-
-            </Route>
+            <Route path="/" component={App} />
         </div>
-    </BrowserRouter>,
+    </Router>,
     document.getElementById('app')
 );
